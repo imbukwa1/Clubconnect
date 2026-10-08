@@ -1,0 +1,6 @@
+<?php declare(strict_types=1); ?>
+<section class="view hidden" id="view-event-details" data-title="Event details" data-section="Student workspace"><button class="back-link" data-view="events">* * Back to events</button><div class="event-detail-banner banner-blue"><div><span>OCTOBER 10, 2026</span><h1>Interfaculty Debate Night</h1><p>Presented by the Debate Society</p></div><span class="large-event-icon">*</span></div><div class="detail-columns event-detail-columns"><article class="panel"><span class="tag tag-blue">Academic</span><h2>Challenge your perspective</h2><p>Join students from across campus for an evening of lively debate, new perspectives and thoughtful conversation. No prior experience is required - just bring your curiosity.</p><div class="info-grid"><span>* <strong>5:30 PM * 8:00 PM</strong><small>Saturday, 10 October</small></span><span>* <strong>Main Auditorium</strong><small>North campus</small></span><span>* <strong>84 attending</strong><small>20 spaces remaining</small></span></div></article><aside class="panel registration-card"><h2>Ready to join?</h2><p class="muted">Reserve your place at this event.</p><button class="button button-primary full-width" id="register-event">Register for event <span>* *</span></button><p class="form-note">Free * Registration closes 9 October</p></aside></div></section>
+
+
+
+

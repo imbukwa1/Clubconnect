@@ -1,0 +1,8 @@
+<?php declare(strict_types=1); ?>
+<section class="view auth-view" id="view-login" data-title="Welcome back" data-section="Authentication">
+          <div class="auth-layout"><div class="auth-art"><span class="eyebrow light">YOUR CAMPUS, YOUR COMMUNITY</span><h1>Find your people.<br><em>Build your circle.</em></h1><p>One place to discover clubs, meetups and opportunities that make campus feel like home.</p><div class="floating-stat"><strong>24</strong><span>active clubs<br>this semester</span></div></div><div class="auth-card"><div class="auth-logo"><span class="brand-mark">CC</span><div><strong>Club<span class="brand-accent">Connect</span></strong><small>Campus community, connected</small></div></div><h2>Welcome back</h2><p class="muted">Sign in to continue to your workspace.</p><form class="validate-form" data-success="Welcome back, Alex!" data-redirect="student-dashboard"><label for="login-email">University email</label><input id="login-email" type="email" placeholder="you@university.ac.ke" required><label for="login-password">Password</label><div class="input-with-action"><input id="login-password" type="password" placeholder="Enter your password" minlength="6" required><button type="button" class="input-action" data-toggle-password="login-password">Show</button></div><div class="form-row"><label class="check-label"><input type="checkbox"> Remember me</label><a href="#">Forgot password?</a></div><button class="button button-primary full-width" type="submit">Sign in <span>* *</span></button></form><p class="auth-switch">New to ClubConnect? <button data-view="register">Create an account</button></p></div></div>
+        </section>
+
+
+
+

@@ -1,0 +1,6 @@
+<?php declare(strict_types=1); ?>
+<section class="view hidden" id="view-admin-registrations" data-title="Event registrations" data-section="Administration"><div class="page-heading"><div><span class="eyebrow gold-eyebrow">EVENT MANAGEMENT</span><h1>Event registrations</h1><p class="muted">Interfaculty Debate Night * 84 registered</p></div><button class="button button-outline" data-view="admin-events">* * Back to events</button></div><div class="panel admin-table"><div class="table-row table-head"><span>Student</span><span>University email</span><span>Registered</span><span>Status</span><span>Action</span></div><div class="table-row"><span class="table-event"><span class="avatar blue">AM</span><strong>Alex Mwangi<small>Student ID: CC-1042</small></strong></span><span>alex@university.ac.ke</span><span>8 Oct 2026</span><span class="tag tag-green">Confirmed</span><button class="text-button danger">Remove</button></div><div class="table-row"><span class="table-event"><span class="avatar coral">LO</span><strong>Lisa Otieno<small>Student ID: CC-1043</small></strong></span><span>lisa@university.ac.ke</span><span>8 Oct 2026</span><span class="tag tag-green">Confirmed</span><button class="text-button danger">Remove</button></div></div></section>
+
+
+
+
