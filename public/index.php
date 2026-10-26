@@ -8,19 +8,27 @@ require dirname(__DIR__) . '/config/Database.php';
 require dirname(__DIR__) . '/app/models/User.php';
 require dirname(__DIR__) . '/app/models/Club.php';
 require dirname(__DIR__) . '/app/models/Event.php';
+require dirname(__DIR__) . '/app/models/ClubMembership.php';
+require dirname(__DIR__) . '/app/models/EventRegistration.php';
 require dirname(__DIR__) . '/app/controllers/AuthGuard.php';
 require dirname(__DIR__) . '/app/controllers/AuthController.php';
 require dirname(__DIR__) . '/app/controllers/ClubController.php';
 require dirname(__DIR__) . '/app/controllers/EventController.php';
+require dirname(__DIR__) . '/app/controllers/ClubMembershipController.php';
+require dirname(__DIR__) . '/app/controllers/EventRegistrationController.php';
 
 use ClubConnect\Config\Database;
 use ClubConnect\Config\Session;
 use ClubConnect\Controllers\AuthController;
 use ClubConnect\Controllers\ClubController;
 use ClubConnect\Controllers\EventController;
+use ClubConnect\Controllers\ClubMembershipController;
+use ClubConnect\Controllers\EventRegistrationController;
 use ClubConnect\Controllers\AuthGuard;
 use ClubConnect\Models\Club;
 use ClubConnect\Models\Event;
+use ClubConnect\Models\ClubMembership;
+use ClubConnect\Models\EventRegistration;
 use ClubConnect\Models\User;
 Session::start();
 
@@ -31,6 +39,36 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $action !== '') {
 
         if ($action === 'logout') {
             (new AuthController(new User(Database::connection())))->logout();
+        }
+
+        if (in_array($action, ['join-club', 'leave-club', 'register-event', 'cancel-registration'], true)) {
+            $sessionUser = AuthGuard::user();
+            if ($sessionUser === null || ($sessionUser['role'] ?? null) !== 'student') {
+                throw new RuntimeException('Only authenticated students can perform that action.');
+            }
+            $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+            $id = $id === false ? 0 : $id;
+            $pdo = Database::connection();
+            $success = false;
+            $redirectView = 'student-dashboard';
+            if ($action === 'join-club' || $action === 'leave-club') {
+                $success = $action === 'join-club'
+                    ? (new ClubMembershipController(new ClubMembership($pdo)))->join((int) $sessionUser['user_id'], $id)
+                    : (new ClubMembershipController(new ClubMembership($pdo)))->leave((int) $sessionUser['user_id'], $id);
+                $redirectView = 'club-details';
+                Session::flash($success ? 'success' : 'error', $success
+                    ? ($action === 'join-club' ? 'You joined the club.' : 'You left the club.')
+                    : 'That club action could not be completed.');
+            } else {
+                $success = $action === 'register-event'
+                    ? (new EventRegistrationController(new EventRegistration($pdo)))->register((int) $sessionUser['user_id'], $id)
+                    : (new EventRegistrationController(new EventRegistration($pdo)))->cancel((int) $sessionUser['user_id'], $id);
+                $redirectView = 'event-details';
+                Session::flash($success ? 'success' : 'error', $success
+                    ? ($action === 'register-event' ? 'You are registered for the event.' : 'Your event registration was cancelled.')
+                    : 'That event action could not be completed. It may be full, closed, or already changed.');
+            }
+            AuthController::redirect($redirectView . '&id=' . $id);
         }
 
         if (!in_array($action, ['login', 'register'], true)) {
@@ -71,12 +109,23 @@ $selectedClub = null;
 $selectedClubEvents = [];
 $selectedEvent = null;
 $dataError = null;
+$userClubs = [];
+$userRegistrations = [];
+$selectedClubIsMember = false;
+$selectedEventRegistrationStatus = null;
 
 if (AuthGuard::user() !== null) {
     try {
         $pdo = Database::connection();
         $clubController = new ClubController(new Club($pdo));
         $eventController = new EventController(new Event($pdo));
+        $membershipController = new ClubMembershipController(new ClubMembership($pdo));
+        $registrationController = new EventRegistrationController(new EventRegistration($pdo));
+        $sessionUser = AuthGuard::user();
+        if (($sessionUser['role'] ?? null) === 'student') {
+            $userClubs = $membershipController->forUser((int) $sessionUser['user_id']);
+            $userRegistrations = $registrationController->forUser((int) $sessionUser['user_id']);
+        }
 
         if (in_array($initialView, ['clubs', 'admin-clubs'], true)) {
             $clubs = $clubController->index($_GET['q'] ?? null, $_GET['category'] ?? null);
@@ -85,6 +134,9 @@ if (AuthGuard::user() !== null) {
             $selectedClub = $clubController->show($clubId === false ? 0 : $clubId);
             if ($selectedClub !== null) {
                 $selectedClubEvents = $eventController->forClub((int) $selectedClub['club_id']);
+                if (($sessionUser['role'] ?? null) === 'student') {
+                    $selectedClubIsMember = $membershipController->isMember((int) $sessionUser['user_id'], (int) $selectedClub['club_id']);
+                }
             } else {
                 http_response_code(404);
             }
@@ -95,6 +147,8 @@ if (AuthGuard::user() !== null) {
             $selectedEvent = $eventController->show($eventId === false ? 0 : $eventId);
             if ($selectedEvent === null) {
                 http_response_code(404);
+            } elseif (($sessionUser['role'] ?? null) === 'student') {
+                $selectedEventRegistrationStatus = $registrationController->status((int) $sessionUser['user_id'], (int) $selectedEvent['event_id']);
             }
         }
     } catch (RuntimeException $exception) {
