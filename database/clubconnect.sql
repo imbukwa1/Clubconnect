@@ -164,11 +164,11 @@ WHERE c.name = 'Tech Innovators';
 INSERT IGNORE INTO event_registrations (event_id, user_id, status)
 SELECT e.event_id, u.user_id, sample.status
 FROM events AS e
-JOIN users AS u ON u.email = sample.email
 JOIN (
   SELECT 'Interfaculty Debate Night' AS title, 'alex.mwangi@example.test' AS email, 'registered' AS status
   UNION ALL
   SELECT 'Design Thinking Workshop', 'lisa.otieno@example.test', 'registered'
   UNION ALL
   SELECT 'Saturday Football Social', 'alex.mwangi@example.test', 'attended'
-) AS sample ON sample.title = e.title;
+) AS sample ON sample.title = e.title
+JOIN users AS u ON u.email = sample.email;
