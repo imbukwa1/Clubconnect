@@ -4,19 +4,28 @@ declare(strict_types=1);
 $viewFiles = [
     __DIR__ . '/../auth/login.php',
     __DIR__ . '/../auth/register.php',
-    __DIR__ . '/../student/dashboard.php',
-    __DIR__ . '/../student/clubs.php',
-    __DIR__ . '/../student/club-details.php',
-    __DIR__ . '/../student/events.php',
-    __DIR__ . '/../student/event-details.php',
-    __DIR__ . '/../student/registrations.php',
-    __DIR__ . '/../admin/dashboard.php',
-    __DIR__ . '/../admin/clubs.php',
-    __DIR__ . '/../admin/club-form.php',
-    __DIR__ . '/../admin/events.php',
-    __DIR__ . '/../admin/event-form.php',
-    __DIR__ . '/../admin/registrations.php',
 ];
+$currentUser = \ClubConnect\Controllers\AuthGuard::user();
+if (($currentUser['role'] ?? null) === 'student') {
+    $viewFiles = array_merge($viewFiles, [
+        __DIR__ . '/../student/dashboard.php',
+        __DIR__ . '/../student/clubs.php',
+        __DIR__ . '/../student/club-details.php',
+        __DIR__ . '/../student/events.php',
+        __DIR__ . '/../student/event-details.php',
+        __DIR__ . '/../student/registrations.php',
+    ]);
+}
+if (($currentUser['role'] ?? null) === 'admin') {
+    $viewFiles = array_merge($viewFiles, [
+        __DIR__ . '/../admin/dashboard.php',
+        __DIR__ . '/../admin/clubs.php',
+        __DIR__ . '/../admin/club-form.php',
+        __DIR__ . '/../admin/events.php',
+        __DIR__ . '/../admin/event-form.php',
+        __DIR__ . '/../admin/registrations.php',
+    ]);
+}
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -34,7 +43,7 @@ $viewFiles = [
     <?php require __DIR__ . '/../partials/sidebar.php'; ?>
     <main class="main-area">
       <?php require __DIR__ . '/../partials/topbar.php'; ?>
-      <div class="content-wrap">
+      <div class="content-wrap" data-initial-view="<?= htmlspecialchars($initialView ?? 'login', ENT_QUOTES, 'UTF-8') ?>">
         <?php foreach ($viewFiles as $viewFile) { require $viewFile; } ?>
       </div>
     </main>
@@ -43,4 +52,3 @@ $viewFiles = [
   <script src="js/app.js"></script>
 </body>
 </html>
-
