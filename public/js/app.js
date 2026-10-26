@@ -28,7 +28,7 @@
   }
 
   navLinks.forEach(link => link.addEventListener('click', event => {
-    if (link.tagName === 'BUTTON' || link.dataset.view) event.preventDefault();
+    if (link.dataset.route !== 'true') event.preventDefault();
     setView(link.dataset.view);
   }));
 

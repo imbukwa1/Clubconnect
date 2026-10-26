@@ -1,6 +1,29 @@
 <?php declare(strict_types=1); ?>
-<section class="view hidden" id="view-events" data-title="Upcoming events" data-section="Student workspace"><div class="page-heading"><div><span class="eyebrow">MAKE YOUR NEXT MEMORY</span><h1>Upcoming events</h1><p class="muted">Find something worth showing up for.</p></div><button class="button button-primary">My calendar <span>*</span></button></div><div class="toolbar"><div class="search-box"><span>*</span><input id="event-search" type="search" placeholder="Search events..." aria-label="Search events"></div><select aria-label="Filter events"><option>All categories</option><option>Academic</option><option>Social</option><option>Sports</option></select></div><div class="card-grid event-cards"><article class="event-card" data-search="interfaculty debate night"><div class="event-banner banner-blue"><span>OCT<br><strong>10</strong></span><i>*</i></div><div class="card-body"><span class="tag tag-blue">Academic</span><h3>Interfaculty Debate Night</h3><p>Sharp minds, big questions and an evening of friendly competition.</p><div class="card-meta"><span>* 5:30 PM</span><span>* 84 going</span></div><button class="button button-primary full-width" data-view="event-details">View details</button></div></article><article class="event-card" data-search="design thinking workshop"><div class="event-banner banner-orange"><span>OCT<br><strong>12</strong></span><i>*</i></div><div class="card-body"><span class="tag tag-orange">Workshop</span><h3>Design Thinking Workshop</h3><p>Turn a real campus challenge into a human-centred solution.</p><div class="card-meta"><span>* 2:00 PM</span><span>* 28 going</span></div><button class="button button-primary full-width" data-view="event-details">View details</button></div></article><article class="event-card" data-search="saturday football social"><div class="event-banner banner-green"><span>OCT<br><strong>17</strong></span><i>* </i></div><div class="card-body"><span class="tag tag-green">Social</span><h3>Saturday Football Social</h3><p>Good teams, good energy and no experience required.</p><div class="card-meta"><span>* 10:00 AM</span><span>* 42 going</span></div><button class="button button-primary full-width" data-view="event-details">View details</button></div></article></div></section>
-
-
-
-
+<section class="view hidden" id="view-events" data-title="Upcoming events" data-section="Student workspace">
+  <div class="page-heading">
+    <div><span class="eyebrow">MAKE YOUR NEXT MEMORY</span><h1>Upcoming events</h1><p class="muted">Find something worth showing up for.</p></div>
+    <button class="button button-primary">My calendar <span>⌗</span></button>
+  </div>
+  <form class="toolbar" method="get" action="index.php">
+    <input type="hidden" name="view" value="events">
+    <div class="search-box"><span>⌕</span><input id="event-search" name="q" type="search" value="<?= e($_GET['q'] ?? '') ?>" placeholder="Search events..." aria-label="Search events"></div>
+    <select name="category" aria-label="Filter events"><option value="">All categories</option>
+      <?php foreach (['Academic', 'Creative', 'Social', 'Sports'] as $category): ?><option value="<?= e($category) ?>" <?= strtolower((string) ($_GET['category'] ?? '')) === strtolower($category) ? 'selected' : '' ?>><?= e($category) ?></option><?php endforeach; ?>
+    </select>
+    <button class="button button-outline" type="submit">Search</button>
+  </form>
+  <?php if ($dataError !== null): ?>
+    <div class="panel empty-state"><h3>Events are temporarily unavailable.</h3><p class="muted"><?= e($dataError) ?></p></div>
+  <?php elseif ($events === []): ?>
+    <p class="empty-state">No events match your search.</p>
+  <?php else: ?>
+    <div class="card-grid event-cards">
+      <?php foreach ($events as $event): $tone = event_tone((string) $event['club_category']); $timestamp = strtotime((string) $event['event_date']); $searchText = strtolower((string) $event['title'] . ' ' . (string) $event['description'] . ' ' . (string) $event['venue']); ?>
+        <article class="event-card" data-search="<?= e($searchText) ?>">
+          <div class="event-banner banner-<?= e($tone) ?>"><span><?= e(strtoupper(date('M', $timestamp))) ?><br><strong><?= e(date('d', $timestamp)) ?></strong></span><i>✦</i></div>
+          <div class="card-body"><span class="tag tag-<?= e($tone) ?>"><?= e($event['club_category']) ?></span><h3><?= e($event['title']) ?></h3><p><?= e($event['description']) ?></p><div class="card-meta"><span><?= e(date('g:i A', strtotime((string) $event['event_time']))) ?></span><span><?= e($event['venue']) ?></span></div><a class="button button-primary full-width" data-view="event-details" data-route="true" href="index.php?view=event-details&amp;id=<?= (int) $event['event_id'] ?>">View details</a></div>
+        </article>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</section>

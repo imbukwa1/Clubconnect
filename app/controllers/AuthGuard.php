@@ -44,6 +44,10 @@ final class AuthGuard
             return ($user['role'] ?? null) === 'admin';
         }
 
+        if (in_array($view, ['club-details', 'event-details'], true)) {
+            return in_array(($user['role'] ?? null), ['student', 'admin'], true);
+        }
+
         return in_array($view, self::STUDENT_VIEWS, true) && ($user['role'] ?? null) === 'student';
     }
 

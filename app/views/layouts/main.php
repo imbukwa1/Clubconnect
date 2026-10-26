@@ -6,6 +6,26 @@ $viewFiles = [
     __DIR__ . '/../auth/register.php',
 ];
 $currentUser = \ClubConnect\Controllers\AuthGuard::user();
+if (!function_exists('e')) {
+    function e(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+}
+if (!function_exists('club_tone')) {
+    function club_tone(string $category): string
+    {
+        $tones = ['academic' => 'teal', 'creative' => 'violet', 'social' => 'rose', 'sports' => 'gold'];
+        return $tones[strtolower($category)] ?? 'blue';
+    }
+}
+if (!function_exists('event_tone')) {
+    function event_tone(string $category): string
+    {
+        $tones = ['academic' => 'blue', 'creative' => 'orange', 'social' => 'green', 'sports' => 'green'];
+        return $tones[strtolower($category)] ?? 'blue';
+    }
+}
 if (($currentUser['role'] ?? null) === 'student') {
     $viewFiles = array_merge($viewFiles, [
         __DIR__ . '/../student/dashboard.php',
@@ -24,6 +44,8 @@ if (($currentUser['role'] ?? null) === 'admin') {
         __DIR__ . '/../admin/events.php',
         __DIR__ . '/../admin/event-form.php',
         __DIR__ . '/../admin/registrations.php',
+        __DIR__ . '/../student/club-details.php',
+        __DIR__ . '/../student/event-details.php',
     ]);
 }
 ?><!doctype html>
