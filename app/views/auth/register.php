@@ -6,10 +6,11 @@
       <h2>Create your account</h2><p class="muted">Join the community in less than a minute.</p>
       <form class="validate-form" data-server-form="true" method="post" action="index.php?action=register">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars(\ClubConnect\Config\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="account_type" id="register-account-type" value="student">
+        <div class="role-selector"><div class="role-toggle" role="radiogroup" aria-label="Account type"><span class="role-indicator" aria-hidden="true"></span><button type="button" class="role-option active" data-registration-role="student" aria-pressed="true">Student</button><button type="button" class="role-option" data-registration-role="admin" aria-pressed="false">Administrator</button></div></div>
         <div class="form-grid"><div><label for="register-first">First name</label><input id="register-first" name="first_name" type="text" placeholder="Alex" required></div><div><label for="register-last">Last name</label><input id="register-last" name="last_name" type="text" placeholder="Mwangi" required></div></div>
         <label for="register-email">University email</label><input id="register-email" name="email" type="email" placeholder="you@university.ac.ke" required>
         <label for="register-password">Create password</label><input id="register-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" required>
-        <label class="check-label terms"><input type="checkbox" name="terms" value="1" required> I agree to the <a href="#">community guidelines</a></label>
         <button class="button button-primary full-width" type="submit">Create account <span>→</span></button>
       </form>
       <p class="auth-switch">Already have an account? <button data-view="login">Sign in</button></p>

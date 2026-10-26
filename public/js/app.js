@@ -55,6 +55,20 @@
     button.textContent = input.type === 'password' ? 'Show' : 'Hide';
   }));
 
+  const accountType = document.querySelector('#register-account-type');
+  const roleToggle = document.querySelector('.role-toggle');
+  document.querySelectorAll('[data-registration-role]').forEach(button => button.addEventListener('click', () => {
+    const role = button.dataset.registrationRole;
+    if (!accountType) return;
+    accountType.value = role;
+    roleToggle?.classList.toggle('admin-selected', role === 'admin');
+    document.querySelectorAll('[data-registration-role]').forEach(option => {
+      const selected = option.dataset.registrationRole === role;
+      option.classList.toggle('active', selected);
+      option.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+  }));
+
   document.querySelectorAll('.validate-form').forEach(form => form.addEventListener('submit', event => {
     if (form.dataset.serverForm === 'true') return;
     event.preventDefault();

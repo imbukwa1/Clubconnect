@@ -167,6 +167,7 @@ $selectedClubIsMember = false;
 $selectedEventRegistrationStatus = null;
 $studentDashboard = [];
 $adminDashboard = [];
+$adminRegistrations = [];
 $selectedAdminClub = null;
 $selectedAdminEvent = null;
 
@@ -185,8 +186,12 @@ if (AuthGuard::user() !== null) {
             if ($initialView === 'student-dashboard') {
                 $studentDashboard = $dashboardController->student((int) $sessionUser['user_id']);
             }
-        } elseif (($sessionUser['role'] ?? null) === 'admin' && $initialView === 'admin-dashboard') {
-            $adminDashboard = $dashboardController->admin();
+        } elseif (($sessionUser['role'] ?? null) === 'admin') {
+            if ($initialView === 'admin-dashboard') {
+                $adminDashboard = $dashboardController->admin();
+            } elseif ($initialView === 'admin-registrations') {
+                $adminRegistrations = $dashboardController->registrations();
+            }
         }
 
         if (in_array($initialView, ['clubs', 'admin-clubs'], true)) {

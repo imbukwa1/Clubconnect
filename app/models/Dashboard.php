@@ -57,6 +57,27 @@ final class Dashboard
         ];
     }
 
+    public function registrations(): array
+    {
+        $users = $this->userColumns();
+        $events = $this->eventColumns();
+        $eventId = isset($events['event_id']) ? 'event_id' : 'id';
+        $eventTime = isset($events['event_time']) ? 'event_time' : 'start_time';
+        $userId = $this->userIdColumn();
+        $userName = isset($users['first_name']) ? "CONCAT(u.first_name, ' ', u.last_name)" : 'u.name';
+        $studentIdentifier = isset($users['student_id']) ? 'u.student_id' : "''";
+        $statement = $this->pdo->prepare(
+            'SELECT er.status, er.registered_at, e.' . $eventId . ' AS event_id, e.title, '
+            . 'e.event_date, e.' . $eventTime . ' AS event_time, ' . $userName . ' AS user_name, '
+            . 'u.email, ' . $studentIdentifier . ' AS student_identifier '
+            . 'FROM event_registrations AS er JOIN users AS u ON u.' . $userId . ' = er.user_id '
+            . 'JOIN events AS e ON e.' . $eventId . ' = er.event_id '
+            . 'ORDER BY er.registered_at DESC'
+        );
+        $statement->execute();
+        return $statement->fetchAll();
+    }
+
     private function studentRecentActivity(int $userId): array
     {
         $eventColumns = $this->eventColumns();

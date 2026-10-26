@@ -21,6 +21,7 @@ final class AuthController
         $lastName = trim((string) ($input['last_name'] ?? ''));
         $email = strtolower(trim((string) ($input['email'] ?? '')));
         $password = (string) ($input['password'] ?? '');
+        $accountType = strtolower(trim((string) ($input['account_type'] ?? 'student')));
 
         if (!$this->validName($firstName) || !$this->validName($lastName)) {
             throw new RuntimeException('Please provide valid first and last names.');
@@ -31,6 +32,9 @@ final class AuthController
         if (strlen($password) < 8) {
             throw new RuntimeException('Your password must be at least 8 characters long.');
         }
+        if (!in_array($accountType, ['student', 'admin'], true)) {
+            throw new RuntimeException('Please select a valid account type.');
+        }
         if ($this->users->findByEmail($email) !== null) {
             throw new RuntimeException('An account with that email already exists.');
         }
@@ -40,7 +44,8 @@ final class AuthController
                 $firstName,
                 $lastName,
                 $email,
-                password_hash($password, PASSWORD_DEFAULT)
+                password_hash($password, PASSWORD_DEFAULT),
+                $accountType
             );
         } catch (PDOException $exception) {
             if ((string) $exception->getCode() === '23000') {
@@ -54,10 +59,10 @@ final class AuthController
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $email,
-            'role' => 'student',
+            'role' => $accountType,
         ]);
         Session::flash('success', 'Account created successfully. Welcome to ClubConnect.');
-        self::redirect('student-dashboard');
+        self::redirect($accountType === 'admin' ? 'admin-dashboard' : 'student-dashboard');
     }
 
     public function login(array $input): void
@@ -95,7 +100,18 @@ final class AuthController
 
     public static function redirect(string $view): never
     {
-        header('Location: index.php?view=' . rawurlencode($view));
+        $parts = explode('&', $view, 2);
+        $location = 'index.php?view=' . rawurlencode((string) $parts[0]);
+        if (isset($parts[1]) && $parts[1] !== '') {
+            $query = [];
+            parse_str($parts[1], $query);
+            foreach ($query as $key => $value) {
+                if (is_scalar($value)) {
+                    $location .= '&' . rawurlencode((string) $key) . '=' . rawurlencode((string) $value);
+                }
+            }
+        }
+        header('Location: ' . $location);
         exit;
     }
 }

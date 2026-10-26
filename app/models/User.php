@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace ClubConnect\Models;
 
 use PDO;
+use RuntimeException;
 
 final class User
 {
@@ -36,8 +37,12 @@ final class User
         string $firstName,
         string $lastName,
         string $email,
-        string $passwordHash
+        string $passwordHash,
+        string $role = 'student'
     ): int {
+        if (!in_array($role, ['student', 'admin'], true)) {
+            throw new RuntimeException('Invalid account role.');
+        }
         if (isset($this->userColumns()['first_name'])) {
             $statement = $this->pdo->prepare(
                 'INSERT INTO users (first_name, last_name, email, password_hash, role) '
@@ -48,7 +53,7 @@ final class User
                 'last_name' => $lastName,
                 'email' => $email,
                 'password_hash' => $passwordHash,
-                'role' => 'student',
+                'role' => $role,
             ]);
         } else {
             $statement = $this->pdo->prepare(
@@ -59,7 +64,7 @@ final class User
                 'name' => trim($firstName . ' ' . $lastName),
                 'email' => $email,
                 'password' => $passwordHash,
-                'role' => 'student',
+                'role' => $role,
             ]);
         }
 

@@ -28,6 +28,15 @@ function table_columns(PDO $pdo, string $table): array
 
 try {
     $pdo = Database::connection();
+    $baselineDashboard = new Dashboard($pdo);
+    $baselineUsers = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
+    $baselineClubs = (int) $pdo->query('SELECT COUNT(*) FROM clubs')->fetchColumn();
+    $baselineEvents = (int) $pdo->query('SELECT COUNT(*) FROM events')->fetchColumn();
+    $baselineMemberships = (int) $pdo->query('SELECT COUNT(*) FROM club_members')->fetchColumn();
+    $baselineRegistrations = (int) $pdo->query('SELECT COUNT(*) FROM event_registrations')->fetchColumn();
+    $baselineRecentRegistrations = count($baselineDashboard->admin()['recent_registrations']);
+    $baselineUpcomingEvents = count($baselineDashboard->admin()['upcoming_events']);
+    $baselineClubActivity = count($baselineDashboard->admin()['club_activity']);
     $pdo->beginTransaction();
     $token = bin2hex(random_bytes(6));
     $users = new User($pdo);
@@ -65,7 +74,7 @@ try {
     echo "PASS: Student dashboard statistics and activity.\n";
 
     $admin = $dashboard->admin();
-    if ($admin['students'] !== 2 || $admin['clubs'] !== 1 || $admin['events'] !== 1 || $admin['memberships'] !== 1 || $admin['registrations'] !== 1 || count($admin['recent_registrations']) !== 1 || count($admin['upcoming_events']) !== 1 || count($admin['club_activity']) !== 1) {
+    if ($admin['students'] !== $baselineUsers + 2 || $admin['clubs'] !== $baselineClubs + 1 || $admin['events'] !== $baselineEvents + 1 || $admin['memberships'] !== $baselineMemberships + 1 || $admin['registrations'] !== $baselineRegistrations + 1 || count($admin['recent_registrations']) !== min(5, $baselineRecentRegistrations + 1) || count($admin['upcoming_events']) !== min(5, $baselineUpcomingEvents + 1) || count($admin['club_activity']) !== min(5, $baselineClubActivity + 1)) {
         throw new RuntimeException('Admin dashboard statistics or activity were incorrect.');
     }
     echo "PASS: Admin totals, upcoming events, registrations, and club activity.\n";
