@@ -37,12 +37,60 @@ use ClubConnect\Models\User;
 Session::start();
 
 $action = (string) ($_GET['action'] ?? '');
+$failureView = $action === 'register' ? 'register' : 'login';
+if (in_array($action, ['create-club', 'update-club', 'delete-club'], true)) {
+    $failureView = str_starts_with($action, 'delete') ? 'admin-clubs' : 'admin-club-form';
+} elseif (in_array($action, ['create-event', 'update-event', 'delete-event'], true)) {
+    $failureView = str_starts_with($action, 'delete') ? 'admin-events' : 'admin-event-form';
+}
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $action !== '') {
     try {
         AuthController::verifyCsrf($_POST);
 
         if ($action === 'logout') {
             (new AuthController(new User(Database::connection())))->logout();
+        }
+
+        if (in_array($action, ['create-club', 'update-club', 'delete-club', 'create-event', 'update-event', 'delete-event'], true)) {
+            $sessionUser = AuthGuard::user();
+            if ($sessionUser === null || ($sessionUser['role'] ?? null) !== 'admin') {
+                throw new RuntimeException('Only authenticated administrators can perform that action.');
+            }
+            $pdo = Database::connection();
+            $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+            $id = $id === false ? 0 : $id;
+            if (str_ends_with($action, 'club')) {
+                $controller = new ClubController(new Club($pdo));
+                if ($action === 'create-club') {
+                    $controller->create($_POST);
+                    Session::flash('success', 'Club created successfully.');
+                } elseif ($action === 'update-club') {
+                    $controller->update($id, $_POST);
+                    Session::flash('success', 'Club updated successfully.');
+                } else {
+                    $result = $controller->delete($id);
+                    if ($result !== 'deleted') {
+                        throw new RuntimeException($result === 'has_events' ? 'This club cannot be deleted while it has events.' : ($result === 'has_members' ? 'This club cannot be deleted while it has members.' : 'The requested club was not found.'));
+                    }
+                    Session::flash('success', 'Club deleted successfully.');
+                }
+                AuthController::redirect('admin-clubs');
+            }
+            $controller = new EventController(new Event($pdo));
+            if ($action === 'create-event') {
+                $controller->create($_POST);
+                Session::flash('success', 'Event created successfully.');
+            } elseif ($action === 'update-event') {
+                $controller->update($id, $_POST);
+                Session::flash('success', 'Event updated successfully.');
+            } else {
+                $result = $controller->delete($id);
+                if ($result !== 'deleted') {
+                    throw new RuntimeException($result === 'has_registrations' ? 'This event cannot be deleted while it has registrations.' : 'The requested event was not found.');
+                }
+                Session::flash('success', 'Event deleted successfully.');
+            }
+            AuthController::redirect('admin-events');
         }
 
         if (in_array($action, ['join-club', 'leave-club', 'register-event', 'cancel-registration'], true)) {
@@ -88,10 +136,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $action !== '') {
         }
     } catch (RuntimeException $exception) {
         Session::flash('error', $exception->getMessage());
-        AuthController::redirect($action === 'register' ? 'register' : 'login');
+        AuthController::redirect($failureView);
     } catch (Throwable $exception) {
         Session::flash('error', 'The request could not be completed. Please try again.');
-        AuthController::redirect($action === 'register' ? 'register' : 'login');
+        AuthController::redirect($failureView);
     }
 }
 
@@ -119,6 +167,8 @@ $selectedClubIsMember = false;
 $selectedEventRegistrationStatus = null;
 $studentDashboard = [];
 $adminDashboard = [];
+$selectedAdminClub = null;
+$selectedAdminEvent = null;
 
 if (AuthGuard::user() !== null) {
     try {
@@ -141,6 +191,12 @@ if (AuthGuard::user() !== null) {
 
         if (in_array($initialView, ['clubs', 'admin-clubs'], true)) {
             $clubs = $clubController->index($_GET['q'] ?? null, $_GET['category'] ?? null);
+        } elseif ($initialView === 'admin-club-form') {
+            $clubId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+            $selectedAdminClub = $clubId === false ? null : $clubController->show($clubId);
+            if (isset($_GET['id']) && $selectedAdminClub === null) {
+                http_response_code(404);
+            }
         } elseif ($initialView === 'club-details') {
             $clubId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
             $selectedClub = $clubController->show($clubId === false ? 0 : $clubId);
@@ -154,6 +210,13 @@ if (AuthGuard::user() !== null) {
             }
         } elseif (in_array($initialView, ['events', 'admin-events'], true)) {
             $events = $eventController->index($_GET['q'] ?? null, $_GET['category'] ?? null);
+        } elseif ($initialView === 'admin-event-form') {
+            $clubs = $clubController->index(null, null);
+            $eventId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+            $selectedAdminEvent = $eventId === false ? null : $eventController->show($eventId);
+            if (isset($_GET['id']) && $selectedAdminEvent === null) {
+                http_response_code(404);
+            }
         } elseif ($initialView === 'event-details') {
             $eventId = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
             $selectedEvent = $eventController->show($eventId === false ? 0 : $eventId);

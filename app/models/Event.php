@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace ClubConnect\Models;
 
 use PDO;
+use PDOException;
 
 final class Event
 {
@@ -64,6 +65,107 @@ final class Event
         $statement->execute(['club_id' => $clubId]);
 
         return $statement->fetchAll();
+    }
+
+    public function create(array $data): int
+    {
+        if (!$this->clubExists((int) $data['club_id'])) {
+            return 0;
+        }
+        $duplicate = $this->pdo->prepare('SELECT 1 FROM events WHERE club_id = :club_id AND title = :title AND event_date = :event_date LIMIT 1');
+        $duplicate->execute(['club_id' => $data['club_id'], 'title' => $data['title'], 'event_date' => $data['event_date']]);
+        if ($duplicate->fetchColumn() !== false) {
+            throw new PDOException('Duplicate event.', 23000);
+        }
+        $columns = $this->columns();
+        if (isset($columns['event_time'])) {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO events (club_id, title, description, event_date, event_time, venue, capacity) '
+                . 'VALUES (:club_id, :title, :description, :event_date, :event_time, :venue, :capacity)'
+            );
+        } else {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO events (club_id, title, description, event_date, start_time, venue, capacity, status) '
+                . 'VALUES (:club_id, :title, :description, :event_date, :event_time, :venue, :capacity, :status)'
+            );
+        }
+        $parameters = [
+            'club_id' => $data['club_id'], 'title' => $data['title'], 'description' => $data['description'],
+            'event_date' => $data['event_date'], 'event_time' => $data['event_time'],
+            'venue' => $data['venue'], 'capacity' => $data['capacity'],
+        ];
+        if (!isset($columns['event_time'])) {
+            $parameters['status'] = 'upcoming';
+        }
+        $statement->execute($parameters);
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function update(int $eventId, array $data): bool
+    {
+        if ($eventId < 1 || $this->find($eventId) === null || !$this->clubExists((int) $data['club_id'])) {
+            return false;
+        }
+        $duplicate = $this->pdo->prepare('SELECT 1 FROM events WHERE club_id = :club_id AND title = :title AND event_date = :event_date AND ' . $this->eventIdColumn() . ' <> :event_id LIMIT 1');
+        $duplicate->execute(['club_id' => $data['club_id'], 'title' => $data['title'], 'event_date' => $data['event_date'], 'event_id' => $eventId]);
+        if ($duplicate->fetchColumn() !== false) {
+            throw new PDOException('Duplicate event.', 23000);
+        }
+        $columns = $this->columns();
+        $id = isset($columns['event_id']) ? 'event_id' : 'id';
+        $time = isset($columns['event_time']) ? 'event_time' : 'start_time';
+        $statement = $this->pdo->prepare(
+            'UPDATE events SET club_id = :club_id, title = :title, description = :description, '
+            . 'event_date = :event_date, ' . $time . ' = :event_time, venue = :venue, capacity = :capacity '
+            . 'WHERE ' . $id . ' = :event_id'
+        );
+        $statement->execute($data + ['event_id' => $eventId]);
+        return true;
+    }
+
+    public function delete(int $eventId): string
+    {
+        if ($eventId < 1 || $this->find($eventId) === null) {
+            return 'not_found';
+        }
+        $startedTransaction = !$this->pdo->inTransaction();
+        if ($startedTransaction) {
+            $this->pdo->beginTransaction();
+        }
+        try {
+            $id = $this->eventIdColumn();
+            $lock = $this->pdo->prepare('SELECT ' . $id . ' FROM events WHERE ' . $id . ' = :event_id FOR UPDATE');
+            $lock->execute(['event_id' => $eventId]);
+            $statement = $this->pdo->prepare('SELECT COUNT(*) FROM event_registrations WHERE event_id = :event_id');
+            $statement->execute(['event_id' => $eventId]);
+            if ((int) $statement->fetchColumn() > 0) {
+                if ($startedTransaction) {
+                    $this->pdo->rollBack();
+                }
+                return 'has_registrations';
+            }
+            $statement = $this->pdo->prepare('DELETE FROM events WHERE ' . $id . ' = :event_id');
+            $statement->execute(['event_id' => $eventId]);
+            if ($startedTransaction) {
+                $this->pdo->commit();
+            }
+            return 'deleted';
+        } catch (PDOException $exception) {
+            if ($startedTransaction && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function clubExists(int $clubId): bool
+    {
+        if ($clubId < 1) {
+            return false;
+        }
+        $statement = $this->pdo->prepare('SELECT 1 FROM clubs WHERE ' . $this->clubIdColumn() . ' = :club_id LIMIT 1');
+        $statement->execute(['club_id' => $clubId]);
+        return $statement->fetchColumn() !== false;
     }
 
     private function baseQuery(): string
