@@ -10,12 +10,14 @@ require dirname(__DIR__) . '/app/models/Club.php';
 require dirname(__DIR__) . '/app/models/Event.php';
 require dirname(__DIR__) . '/app/models/ClubMembership.php';
 require dirname(__DIR__) . '/app/models/EventRegistration.php';
+require dirname(__DIR__) . '/app/models/Dashboard.php';
 require dirname(__DIR__) . '/app/controllers/AuthGuard.php';
 require dirname(__DIR__) . '/app/controllers/AuthController.php';
 require dirname(__DIR__) . '/app/controllers/ClubController.php';
 require dirname(__DIR__) . '/app/controllers/EventController.php';
 require dirname(__DIR__) . '/app/controllers/ClubMembershipController.php';
 require dirname(__DIR__) . '/app/controllers/EventRegistrationController.php';
+require dirname(__DIR__) . '/app/controllers/DashboardController.php';
 
 use ClubConnect\Config\Database;
 use ClubConnect\Config\Session;
@@ -24,11 +26,13 @@ use ClubConnect\Controllers\ClubController;
 use ClubConnect\Controllers\EventController;
 use ClubConnect\Controllers\ClubMembershipController;
 use ClubConnect\Controllers\EventRegistrationController;
+use ClubConnect\Controllers\DashboardController;
 use ClubConnect\Controllers\AuthGuard;
 use ClubConnect\Models\Club;
 use ClubConnect\Models\Event;
 use ClubConnect\Models\ClubMembership;
 use ClubConnect\Models\EventRegistration;
+use ClubConnect\Models\Dashboard;
 use ClubConnect\Models\User;
 Session::start();
 
@@ -113,6 +117,8 @@ $userClubs = [];
 $userRegistrations = [];
 $selectedClubIsMember = false;
 $selectedEventRegistrationStatus = null;
+$studentDashboard = [];
+$adminDashboard = [];
 
 if (AuthGuard::user() !== null) {
     try {
@@ -121,10 +127,16 @@ if (AuthGuard::user() !== null) {
         $eventController = new EventController(new Event($pdo));
         $membershipController = new ClubMembershipController(new ClubMembership($pdo));
         $registrationController = new EventRegistrationController(new EventRegistration($pdo));
+        $dashboardController = new DashboardController(new Dashboard($pdo));
         $sessionUser = AuthGuard::user();
         if (($sessionUser['role'] ?? null) === 'student') {
             $userClubs = $membershipController->forUser((int) $sessionUser['user_id']);
             $userRegistrations = $registrationController->forUser((int) $sessionUser['user_id']);
+            if ($initialView === 'student-dashboard') {
+                $studentDashboard = $dashboardController->student((int) $sessionUser['user_id']);
+            }
+        } elseif (($sessionUser['role'] ?? null) === 'admin' && $initialView === 'admin-dashboard') {
+            $adminDashboard = $dashboardController->admin();
         }
 
         if (in_array($initialView, ['clubs', 'admin-clubs'], true)) {
